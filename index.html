@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BCT Card Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Bebas+Neue&family=Exo+2:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --crimson: #c8001a;
+  --crimson-light: #ff1a35;
+  --crimson-dark: #7a000f;
+  --gold: #e8a000;
+  --gold-bright: #ffbe2e;
+  --gold-dim: #a06800;
+  --bg-void: #050005;
+  --bg-dark: #0c0008;
+  --bg-panel: #110010;
+  --bg-surface: #180015;
+  --bg-lift: #200020;
+  --border-dim: rgba(200,0,26,0.18);
+  --border-mid: rgba(200,0,26,0.35);
+  --border-hi: rgba(200,0,26,0.6);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255,255,255,0.65);
+  --text-dim: rgba(255,255,255,0.35);
+  --glow-red: 0 0 20px rgba(200,0,26,0.4);
+  --glow-gold: 0 0 20px rgba(232,160,0,0.35);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: var(--bg-void);
+  background-image:
+    radial-gradient(ellipse 100% 40% at 50% 0%, rgba(180,0,20,0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 30% at 80% 30%, rgba(100,0,80,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 30% at 20% 70%, rgba(120,0,0,0.08) 0%, transparent 60%);
+  color: var(--text-primary);
+  font-family: 'Exo 2', sans-serif;
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── HEADER ── */
+.header {
+  padding: 16px 16px 14px;
+  background: linear-gradient(180deg,
+    rgba(30,0,20,0.95) 0%,
+    rgba(15,0,10,0.9) 100%);
+  border-bottom: 1px solid var(--border-mid);
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, var(--crimson), var(--gold), var(--crimson), transparent);
+  opacity: 0.8;
+}
+.header::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(200,0,26,0.015) 3px,
+    rgba(200,0,26,0.015) 4px
+  );
+  pointer-events:none;
+}
+.header-top {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom: 8px;
+}
+.header-badge {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--gold);
+  background: rgba(232,160,0,0.08);
+  border: 1px solid rgba(232,160,0,0.25);
+  padding: 3px 10px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.header-version {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+.header-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  letter-spacing: 3px;
+  color: var(--text-primary);
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(200,0,26,0.5);
+}
+.header-title em {
+  font-style:normal;
+  color: var(--gold-bright);
+  text-shadow: 0 0 20px rgba(232,160,0,0.6);
+}
+.header-sub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ── CANVAS AREA ── */
+.canvas-wrap {
+  padding: 14px 14px 0;
+}
+.canvas-outer {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  /* Glossy premium shadow */
+  box-shadow:
+    0 0 0 1px rgba(200,0,26,0.5),
+    0 0 0 2px rgba(200,0,26,0.15),
+    0 8px 40px rgba(0,0,0,0.9),
+    0 0 60px rgba(180,0,20,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.canvas-outer::after {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0; height:50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+  pointer-events:none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  z-index:2;
+}
+#mainCanvas {
+  display:block;
+  width:100%;
+  height:auto;
+  cursor:default;
+  touch-action:none;
+  user-select:none;
+  border-radius: var(--radius);
+}
+#mainCanvas.mode-blur { cursor: crosshair; }
+#mainCanvas.mode-mosaic { cursor: crosshair; }
+
+/* ── DASHBOARD ── */
+.dashboard {
+  flex:1;
+  padding: 14px;
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+
+/* Section label */
+.sec-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  padding-left: 2px;
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+.sec-label::after {
+  content:'';
+  flex:1;
+  height:1px;
+  background: linear-gradient(90deg, var(--border-dim), transparent);
+}
+
+/* Upload Slots */
+.upload-row {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap: 10px;
+}
+.upload-slot {
+  background: var(--bg-surface);
+  border: 1.5px dashed rgba(200,0,26,0.35);
+  border-radius: var(--radius);
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position:relative;
+  overflow:hidden;
+  min-height: 110px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap: 6px;
+  /* Glossy inset */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
+}
+.upload-slot::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0; height:40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+  pointer-events:none;
+}
+.upload-slot:active { transform:scale(0.97); }
+.upload-slot.loaded {
+  border-style:solid;
+  border-color: rgba(200,0,26,0.55);
+  box-shadow:
+    0 0 15px rgba(200,0,26,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
+}
+.slot-thumb {
+  width:100%; height:80px;
+  object-fit:cover;
+  display:none;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.upload-slot.loaded .slot-thumb { display:block; }
+.slot-body { padding: 8px 10px 10px; width:100%; text-align:center; }
+
+/* CSS Upload Icon */
+.ico-upload {
+  width:28px; height:28px;
+  position:relative;
+  margin:0 auto 2px;
+  display:block;
+}
+.upload-slot.loaded .ico-upload { display:none; }
+.ico-upload::before {
+  content:'';
+  position:absolute;
+  bottom:0; left:50%; transform:translateX(-50%);
+  width:20px; height:13px;
+  border: 2px solid rgba(200,0,26,0.5);
+  border-radius: 3px;
+}
+.ico-upload::after {
+  content:'';
+  position:absolute;
+  top:0; left:50%; transform:translateX(-50%);
+  width:0; height:0;
+  border-left:7px solid transparent;
+  border-right:7px solid transparent;
+  border-bottom:10px solid rgba(200,0,26,0.5);
+}
+.slot-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+.upload-slot.loaded .slot-name {
+  color: #5dba6e;
+  font-size: 10px;
+}
+
+/* Tool Panel */
+.tool-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius);
+  overflow:hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 4px 20px rgba(0,0,0,0.4);
+}
+
+/* Tool Row - Logo */
+.tool-row {
+  display:flex;
+  align-items:center;
+  gap: 0;
+  border-bottom: 1px solid var(--border-dim);
+}
+.tool-row:last-child { border-bottom:none; }
+
+.tool-btn {
+  flex:1;
+  padding: 12px 14px;
+  background:transparent;
+  border:none;
+  color: var(--text-secondary);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  transition: all 0.18s;
+  position:relative;
+}
+.tool-btn::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.02), transparent);
+  opacity:0;
+  transition: opacity 0.15s;
+}
+.tool-btn:active::after { opacity:1; }
+.tool-btn:active { transform:scale(0.98); }
+
+.tool-btn.active {
+  color: var(--text-primary);
+  background: rgba(200,0,26,0.12);
+}
+.tool-btn.active-gold {
+  color: var(--gold-bright);
+  background: rgba(232,160,0,0.08);
+}
+
+/* Toggle pill */
+.toggle-pill {
+  margin-left:auto;
+  width:36px; height:20px;
+  background: rgba(255,255,255,0.08);
+  border-radius:10px;
+  position:relative;
+  transition: background 0.2s;
+  flex-shrink:0;
+}
+.toggle-pill::after {
+  content:'';
+  position:absolute;
+  top:3px; left:3px;
+  width:14px; height:14px;
+  background:#555;
+  border-radius:50%;
+  transition: all 0.2s;
+}
+.tool-btn.active .toggle-pill,
+.tool-btn.active-gold .toggle-pill {
+  background: var(--crimson);
+}
+.tool-btn.active-gold .toggle-pill {
+  background: var(--gold);
+}
+.tool-btn.active .toggle-pill::after,
+.tool-btn.active-gold .toggle-pill::after {
+  left:19px;
+  background:#fff;
+}
+
+/* Divider between tool buttons */
+.tool-divider {
+  width:1px;
+  height:40px;
+  background: var(--border-dim);
+  flex-shrink:0;
+}
+
+/* Brush Controls */
+.brush-panel {
+  display:none;
+  background: rgba(200,0,26,0.05);
+  border-top: 1px solid var(--border-dim);
+  padding: 12px 14px;
+  flex-direction:column;
+  gap: 10px;
+  animation: slideIn 0.2s ease;
+}
+.brush-panel.open { display:flex; }
+@keyframes slideIn {
+  from { opacity:0; transform:translateY(-8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* Mode tabs */
+.mode-tabs {
+  display:flex;
+  background: rgba(0,0,0,0.3);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 3px;
+}
+.mode-tab {
+  flex:1;
+  padding: 7px 10px;
+  background:transparent;
+  border:none;
+  border-radius: 6px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  cursor:pointer;
+  transition: all 0.18s;
+  text-transform: uppercase;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 6px;
+}
+.mode-tab.sel {
+  background: var(--crimson);
+  color:#fff;
+  box-shadow: 0 2px 10px rgba(200,0,26,0.4);
+}
+
+/* CSS Blur Icon */
+.ico-blur {
+  width:16px; height:16px;
+  position:relative; flex-shrink:0;
+}
+.ico-blur::before {
+  content:'';
+  position:absolute;
+  inset:2px;
+  border-radius:50%;
+  border:2px solid currentColor;
+  filter:blur(0.5px);
+  opacity:0.8;
+}
+.ico-blur::after {
+  content:'';
+  position:absolute;
+  inset:5px;
+  border-radius:50%;
+  background:currentColor;
+  filter:blur(1px);
+  opacity:0.5;
+}
+
+/* CSS Mosaic Icon */
+.ico-mosaic {
+  width:16px; height:16px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-template-rows:1fr 1fr;
+  gap:2px;
+  flex-shrink:0;
+}
+.ico-mosaic span {
+  background:currentColor;
+  border-radius:1px;
+  opacity:0.85;
+}
+.ico-mosaic span:nth-child(2) { opacity:0.5; }
+.ico-mosaic span:nth-child(3) { opacity:0.5; }
+.ico-mosaic span:nth-child(4) { opacity:0.9; }
+
+/* Slider row */
+.slider-row {
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+.slider-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing:1px;
+  color: var(--text-dim);
+  text-transform:uppercase;
+  white-space:nowrap;
+  min-width:44px;
+}
+.slider-row input[type=range] {
+  flex:1;
+  height:4px;
+  -webkit-appearance:none;
+  appearance:none;
+  background: rgba(255,255,255,0.1);
+  border-radius:2px;
+  outline:none;
+  cursor:pointer;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:16px; height:16px;
+  border-radius:50%;
+  background: var(--crimson);
+  box-shadow: 0 0 8px rgba(200,0,26,0.5);
+  cursor:pointer;
+}
+.slider-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  color: var(--crimson-light);
+  min-width:28px;
+  text-align:right;
+  line-height:1;
+}
+
+/* Undo btn */
+.btn-undo {
+  padding: 7px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing:1px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  transition:all 0.15s;
+  text-transform:uppercase;
+  align-self:flex-start;
+}
+.btn-undo:active { transform:scale(0.96); background:rgba(255,255,255,0.08); }
+
+/* CSS Undo Icon */
+.ico-undo {
+  width:14px; height:14px;
+  position:relative; flex-shrink:0;
+}
+.ico-undo::before {
+  content:'';
+  position:absolute;
+  top:2px; left:2px;
+  width:10px; height:10px;
+  border:2px solid currentColor;
+  border-radius:50%;
+  border-right-color:transparent;
+}
+.ico-undo::after {
+  content:'';
+  position:absolute;
+  top:1px; left:1px;
+  width:0; height:0;
+  border-left:5px solid currentColor;
+  border-top:3px solid transparent;
+  border-bottom:3px solid transparent;
+}
+
+/* CSS Logo Icon */
+.ico-logo {
+  width:16px; height:16px;
+  position:relative;
+  flex-shrink:0;
+}
+.ico-logo::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  border:2px solid currentColor;
+  border-radius:50%;
+}
+.ico-logo::after {
+  content:'';
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  width:7px; height:7px;
+  background:currentColor;
+  clip-path:polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+/* CSS Pen Icon */
+.ico-pen {
+  width:16px; height:16px;
+  position:relative;
+  flex-shrink:0;
+}
+.ico-pen::before {
+  content:'';
+  position:absolute;
+  top:1px; left:4px;
+  width:8px; height:10px;
+  border:2px solid currentColor;
+  border-radius:2px 2px 0 0;
+  transform:rotate(20deg);
+}
+.ico-pen::after {
+  content:'';
+  position:absolute;
+  bottom:1px; left:6px;
+  width:4px; height:4px;
+  background:currentColor;
+  clip-path:polygon(0 0, 100% 0, 50% 100%);
+  transform:rotate(20deg);
+}
+
+/* Download button */
+.btn-download {
+  width:100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #a00015 0%, #cc001f 50%, #e0002a 100%);
+  border:none;
+  border-radius: var(--radius);
+  color:#fff;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 3px;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+  box-shadow:
+    0 4px 25px rgba(200,0,26,0.45),
+    0 1px 0 rgba(255,255,255,0.1) inset,
+    0 -1px 0 rgba(0,0,0,0.3) inset;
+  transition: all 0.2s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 12px;
+}
+.btn-download::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0; height:50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+  pointer-events:none;
+}
+.btn-download::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:rgba(255,255,255,0);
+  transition: background 0.15s;
+}
+.btn-download:active::after { background:rgba(255,255,255,0.08); }
+.btn-download:active { transform:scale(0.98); }
+
+/* CSS Download Icon */
+.ico-dl {
+  width:20px; height:20px;
+  position:relative; flex-shrink:0;
+}
+.ico-dl::before {
+  content:'';
+  position:absolute;
+  top:2px; left:50%;
+  transform:translateX(-50%);
+  width:2px; height:10px;
+  background:#fff;
+  border-radius:1px;
+}
+.ico-dl::after {
+  content:'';
+  position:absolute;
+  top:8px; left:50%;
+  transform:translateX(-50%);
+  width:0; height:0;
+  border-left:7px solid transparent;
+  border-right:7px solid transparent;
+  border-top:8px solid #fff;
+}
+.ico-dl-tray {
+  position:absolute;
+  bottom:0; left:1px; right:1px;
+  height:3px;
+  background:#fff;
+  border-radius:0 0 2px 2px;
+}
+
+/* Status */
+.status {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  text-align:center;
+  min-height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: all 0.2s;
+}
+.status.ok { color:#6de87a; border-color:rgba(100,220,120,0.2); }
+.status.err { color:#ff5566; border-color:rgba(220,50,60,0.3); }
+.status.info { color:var(--gold-bright); border-color:rgba(232,160,0,0.25); }
+
+.bottom-pad { height:20px; }
+input[type="file"] { display:none; }
+
+/* Thin separator */
+.thin-line {
+  height:1px;
+  background:linear-gradient(90deg, transparent, var(--border-dim), transparent);
+  margin: 0;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-badge">BCT TOOLS</div>
+    <div class="header-version">v2.0 PREMIUM</div>
+  </div>
+  <div class="header-title">POST CARD <em>GENERATOR</em></div>
+  <div class="header-sub">AL HARAS UNIT · BANGLADESH CYBER TROOPS</div>
+</div>
+
+<!-- CANVAS -->
+<div class="canvas-wrap">
+  <div class="canvas-outer">
+    <canvas id="mainCanvas"></canvas>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+
+  <!-- Upload -->
+  <div>
+    <div class="sec-label">Upload Photos</div>
+    <div class="upload-row">
+      <div class="upload-slot" id="slot1" onclick="document.getElementById('photo1In').click()">
+        <img class="slot-thumb" id="prev1" alt="">
+        <div class="slot-body">
+          <span class="ico-upload"></span>
+          <div class="slot-name">Photo 1 · Left</div>
+        </div>
+      </div>
+      <div class="upload-slot" id="slot2" onclick="document.getElementById('photo2In').click()">
+        <img class="slot-thumb" id="prev2" alt="">
+        <div class="slot-body">
+          <span class="ico-upload"></span>
+          <div class="slot-name">Photo 2 · Right</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="thin-line"></div>
+
+  <!-- Tools Panel -->
+  <div>
+    <div class="sec-label">Tools</div>
+    <div class="tool-panel">
+
+      <!-- Logo Row -->
+      <div class="tool-row">
+        <button class="tool-btn" id="logoBtn" onclick="toggleLogo()">
+          <span class="ico-logo"></span>
+          Watermark Logo
+          <div class="toggle-pill"></div>
+        </button>
+      </div>
+
+      <!-- Paint Row -->
+      <div class="tool-row">
+        <button class="tool-btn" id="paintBtn" onclick="togglePaint()">
+          <span class="ico-pen"></span>
+          Privacy Brush
+          <div class="toggle-pill"></div>
+        </button>
+      </div>
+
+      <!-- Brush Panel -->
+      <div class="brush-panel" id="brushPanel">
+
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+          <button class="mode-tab sel" id="modeBlur" onclick="setMode('blur')">
+            <span class="ico-blur"></span>
+            Blur
+          </button>
+          <button class="mode-tab" id="modeMosaic" onclick="setMode('mosaic')">
+            <span class="ico-mosaic">
+              <span></span><span></span><span></span><span></span>
+            </span>
+            Mosaic
+          </button>
+        </div>
+
+        <!-- Brush Size -->
+        <div class="slider-row">
+          <span class="slider-label">Size</span>
+          <input type="range" id="brushSize" min="10" max="100" value="35"
+            oninput="document.getElementById('bsVal').textContent=this.value">
+          <span class="slider-val" id="bsVal">35</span>
+        </div>
+
+        <!-- Undo -->
+        <button class="btn-undo" onclick="undoPaint()">
+          <span class="ico-undo"></span>
+          Undo Last
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="thin-line"></div>
+
+  <!-- Download -->
+  <button class="btn-download" onclick="downloadCard()">
+    <span class="ico-dl"><span class="ico-dl-tray"></span></span>
+    DOWNLOAD CARD
+  </button>
+
+  <!-- Status -->
+  <div class="status" id="status">Upload photos to get started</div>
+
+  <div class="bottom-pad"></div>
+</div>
+
+<!-- Hidden Inputs -->
+<input type="file" id="photo1In" accept="image/*" onchange="loadPhoto(this,1)">
+<input type="file" id="photo2In" accept="image/*" onchange="loadPhoto(this,2)">
+
+<script>
+// ── Canvas Setup ──────────────────────────────────────────────────
+const canvas = document.getElementById('mainCanvas');
+const ctx    = canvas.getContext('2d');
+const W = 1080, H = 1080;
+canvas.width  = W;
+canvas.height = H;
+
+// ── State ─────────────────────────────────────────────────────────
+let bgImg    = null;
+let logoImg  = null;
+let photo1   = null;
+let photo2   = null;
+let showLogo = false;
+let paintOn  = false;
+let paintMode = 'blur'; // 'blur' | 'mosaic'
+let painting  = false;
+let history   = [];
+
+// Photo area — calibrated to match BCT template inner white/rounded photo zone
+// The template has a red gradient bg, a large centered white-bordered photo area
+const PA = { x: 109, y: 166, w: 862, h: 830 };
+// Stroke/border width visible around the photo zone
+const STROKE_W = 5;
+
+// ── Load Template ─────────────────────────────────────────────────
+setStatus('Loading template…', 'info');
+
+const bgTry = new Image();
+bgTry.crossOrigin = 'anonymous';
+bgTry.onload = () => {
+  bgImg = bgTry;
+  render();
+  setStatus('Template ready · Upload your photos', 'ok');
+};
+bgTry.onerror = () => {
+  drawFallback();
+  setStatus('Using built-in template', '');
+};
+bgTry.src = 'https://i.ibb.co/PGh3zh2S/PLPL-Osman20260521-182103.jpg';
+
+const logoTry = new Image();
+logoTry.crossOrigin = 'anonymous';
+logoTry.onload = () => { logoImg = logoTry; if(showLogo) render(); };
+logoTry.src = 'https://i.ibb.co/Y72LMbdQ/20260502-163657.png';
+
+// ── Render ────────────────────────────────────────────────────────
+function render() {
+  ctx.clearRect(0,0,W,H);
+
+  if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+    ctx.drawImage(bgImg, 0, 0, W, H);
+  } else {
+    drawFallback();
+  }
+
+  const halfW = PA.w / 2;
+
+  // --- Clip & draw photos inside rounded rect ---
+  ctx.save();
+  roundPath(PA.x, PA.y, PA.w, PA.h, 22);
+  ctx.clip();
+
+  if (photo1) cropDraw(photo1, PA.x, PA.y, halfW, PA.h);
+  if (photo2) cropDraw(photo2, PA.x + halfW, PA.y, halfW, PA.h);
+
+  // Center divider line
+  if (photo1 && photo2) {
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(PA.x + halfW, PA.y);
+    ctx.lineTo(PA.x + halfW, PA.y + PA.h);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  // --- Border/Stroke OVER the photo zone (same as template) ---
+  if (photo1 || photo2) {
+    ctx.save();
+    roundPath(PA.x, PA.y, PA.w, PA.h, 22);
+    ctx.strokeStyle = '#7a000f'; // Deeper red
+    ctx.lineWidth = STROKE_W * 2;
+    ctx.stroke();
+
+    // Inner red glow stroke
+    roundPath(PA.x, PA.y, PA.w, PA.h, 22);
+    ctx.strokeStyle = 'rgba(128,0,16,0.6)'; // Deeper inner glow
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- Logo overlay ---
+  if (showLogo && logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+    const ls = 480; // Significantly increased logo size
+    const lx = PA.x + PA.w/2 - ls/2;
+    const ly = PA.y + PA.h/2 - ls/2;
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.drawImage(logoImg, lx, ly, ls, ls);
+    ctx.restore();
+  }
+}
+
+function cropDraw(img, x, y, w, h) {
+  const ia = img.naturalWidth / img.naturalHeight;
+  const ra = w / h;
+  let sx, sy, sw, sh;
+  if (ia > ra) {
+    sh = img.naturalHeight; sw = sh * ra;
+    sy = 0; sx = (img.naturalWidth - sw) / 2;
+  } else {
+    sw = img.naturalWidth; sh = sw / ra;
+    sx = 0; sy = (img.naturalHeight - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+function roundPath(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+// ── Fallback Template ─────────────────────────────────────────────
+function drawFallback() {
+  // Deep dark red bg
+  const g = ctx.createRadialGradient(W/2,0,0,W/2,H/2,W*0.9);
+  g.addColorStop(0,'#2a0008');
+  g.addColorStop(0.5,'#110003');
+  g.addColorStop(1,'#060001');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,W,H);
+
+  // Top bar
+  ctx.fillStyle = '#8a0010';
+  ctx.fillRect(0, 0, W, 155);
+  const tg = ctx.createLinearGradient(0,0,W,0);
+  tg.addColorStop(0,'#500008');
+  tg.addColorStop(0.5,'#cc0018');
+  tg.addColorStop(1,'#500008');
+  ctx.fillStyle = tg;
+  ctx.fillRect(0,0,W,155);
+
+  ctx.font = 'bold 76px "Bebas Neue", Arial Black, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 10;
+  ctx.fillText('BANGLADESH CYBER TROOPS', W/2, 88);
+  ctx.fillStyle = '#ffbe2e';
+  ctx.font = 'bold 58px "Bebas Neue", Arial Black, sans-serif';
+  ctx.fillText('AL HARAS UNIT', W/2, 146);
+  ctx.shadowBlur = 0;
+
+  // Photo box border
+  roundPath(PA.x, PA.y, PA.w, PA.h, 22);
+  ctx.strokeStyle = '#cc001a';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(80,0,10,0.5)';
+  ctx.fill();
+
+  // Bottom bar
+  ctx.fillStyle = '#cc001a';
+  ctx.fillRect(0, H-72, W, 72);
+  ctx.font = 'bold 30px "Exo 2", Arial, sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'left';
+  ctx.fillText('f  Bangladesh Cyber Tribe', 90, H-30);
+  ctx.textAlign = 'right';
+  ctx.fillText('support@teambct.org', W-90, H-30);
+}
+
+// ── Photo Load ────────────────────────────────────────────────────
+function loadPhoto(input, slot) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      if (slot===1) { photo1=img; updatePreview(1,e.target.result); }
+      else          { photo2=img; updatePreview(2,e.target.result); }
+      history = [];
+      render();
+      setStatus(`Photo ${slot} loaded successfully`, 'ok');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function updatePreview(n, src) {
+  const slot = document.getElementById('slot'+n);
+  const prev = document.getElementById('prev'+n);
+  prev.src = src;
+  slot.classList.add('loaded');
+  slot.querySelector('.slot-name').textContent = n===1 ? 'Left ✓' : 'Right ✓';
+}
+
+// ── Logo ──────────────────────────────────────────────────────────
+function toggleLogo() {
+  showLogo = !showLogo;
+  const btn = document.getElementById('logoBtn');
+  btn.classList.toggle('active-gold', showLogo);
+  render();
+  setStatus(showLogo ? 'Watermark logo added' : 'Logo removed', showLogo?'ok':'');
+}
+
+// ── Paint Tool ────────────────────────────────────────────────────
+function togglePaint() {
+  paintOn = !paintOn;
+  const btn = document.getElementById('paintBtn');
+  const panel = document.getElementById('brushPanel');
+  btn.classList.toggle('active', paintOn);
+  panel.classList.toggle('open', paintOn);
+  canvas.className = paintOn ? 'mode-'+paintMode : '';
+  setStatus(paintOn ? 'Draw on face/details to protect privacy' : 'Privacy brush off', paintOn?'info':'');
+}
+
+function setMode(m) {
+  paintMode = m;
+  document.getElementById('modeBlur').classList.toggle('sel', m==='blur');
+  document.getElementById('modeMosaic').classList.toggle('sel', m==='mosaic');
+  canvas.className = paintOn ? 'mode-'+m : '';
+}
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = W / rect.width;
+  const sy = H / rect.height;
+  const src = e.touches ? e.touches[0] : e;
+  return {
+    x: (src.clientX - rect.left) * sx,
+    y: (src.clientY - rect.top)  * sy
+  };
+}
+
+function applyBrush(x, y) {
+  const r = parseInt(document.getElementById('brushSize').value);
+  if (paintMode === 'blur') {
+    applyGaussBlur(x, y, r);
+  } else {
+    applyMosaic(x, y, r);
+  }
+}
+
+function applyGaussBlur(cx, cy, r) {
+  // Multi-pass box blur for gaussian look
+  const x1 = Math.max(0, cx-r|0);
+  const y1 = Math.max(0, cy-r|0);
+  const x2 = Math.min(W, cx+r|0);
+  const y2 = Math.min(H, cy+r|0); // BUG FIXED HERE: was cx+r
+  const w  = x2-x1, h = y2-y1;
+  if(w<=0||h<=0) return;
+
+  // Use canvas shadow blur trick: draw region with huge blur
+  const tmp = document.createElement('canvas');
+  tmp.width=w; tmp.height=h;
+  const tc = tmp.getContext('2d');
+  tc.filter = `blur(${Math.round(r*0.28)}px)`;
+  tc.drawImage(canvas, x1, y1, w, h, 0, 0, w, h);
+  tc.filter = 'none';
+  tc.drawImage(tmp, 0, 0);
+
+  // Elliptical clip
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, r, r, 0, 0, Math.PI*2);
+  ctx.clip();
+  ctx.drawImage(tmp, x1, y1);
+  ctx.restore();
+}
+
+function applyMosaic(cx, cy, r) {
+  const block = Math.max(8, Math.round(r * 0.3));
+  const x1 = Math.max(0, cx-r|0);
+  const y1 = Math.max(0, cy-r|0);
+  const x2 = Math.min(W, cx+r|0);
+  const y2 = Math.min(H, cy+r|0);
+  for (let bx=x1; bx<x2; bx+=block) {
+    for (let by=y1; by<y2; by+=block) {
+      const bw = Math.min(block, x2-bx);
+      const bh = Math.min(block, y2-by);
+      const dcx = bx+bw/2-cx, dcy = by+bh/2-cy;
+      if (dcx*dcx+dcy*dcy > r*r) continue;
+      const d = ctx.getImageData(bx,by,bw,bh).data;
+      let rr=0,gg=0,bb=0,aa=0,n=0;
+      for(let i=0;i<d.length;i+=4){rr+=d[i];gg+=d[i+1];bb+=d[i+2];aa+=d[i+3];n++;}
+      rr/=n;gg/=n;bb/=n;aa/=n;
+      const patch = ctx.getImageData(bx,by,bw,bh);
+      for(let i=0;i<patch.data.length;i+=4){
+        patch.data[i]=rr; patch.data[i+1]=gg; patch.data[i+2]=bb; patch.data[i+3]=aa;
+      }
+      ctx.putImageData(patch,bx,by);
+    }
+  }
+}
+
+function saveHistory() {
+  if (history.length>=10) history.shift();
+  history.push(ctx.getImageData(0,0,W,H));
+}
+
+function undoPaint() {
+  if (!history.length) { setStatus('Nothing to undo', 'err'); return; }
+  ctx.putImageData(history.pop(), 0, 0);
+  setStatus('Undo complete', 'ok');
+}
+
+// Touch / Mouse events
+canvas.addEventListener('mousedown', e=>{
+  if(!paintOn) return;
+  painting=true; saveHistory();
+  applyBrush(getPos(e).x, getPos(e).y);
+});
+canvas.addEventListener('mousemove', e=>{
+  if(!paintOn||!painting) return;
+  applyBrush(getPos(e).x, getPos(e).y);
+});
+canvas.addEventListener('mouseup',    ()=>{ painting=false; });
+canvas.addEventListener('mouseleave', ()=>{ painting=false; });
+
+canvas.addEventListener('touchstart', e=>{
+  if(!paintOn) return;
+  e.preventDefault(); painting=true; saveHistory();
+  applyBrush(getPos(e).x, getPos(e).y);
+},{passive:false});
+canvas.addEventListener('touchmove', e=>{
+  if(!paintOn||!painting) return;
+  e.preventDefault();
+  applyBrush(getPos(e).x, getPos(e).y);
+},{passive:false});
+canvas.addEventListener('touchend',   ()=>{ painting=false; });
+canvas.addEventListener('touchcancel',()=>{ painting=false; });
+
+// ── Download ──────────────────────────────────────────────────────
+function downloadCard() {
+  if(!photo1 && !photo2) { setStatus('Upload at least one photo first!', 'err'); return; }
+  const a = document.createElement('a');
+  a.download = 'BCT_Card_' + Date.now() + '.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  setStatus('Card saved successfully!', 'ok');
+}
+
+// ── Status ────────────────────────────────────────────────────────
+function setStatus(msg, type='') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status' + (type?' '+type:'');
+}
+</script>
+</body>
+</html>
